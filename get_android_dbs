@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+target_dir = ARGV[0]
+
+unless target_dir
+  $stderr.puts "usage: get_android_dbs target_dir"
+  exit(1)
+end
+
+module Kernel
+  def system!(cmd)
+    puts cmd
+    system(cmd) || raise("'#{cmd}' failed!")
+  end
+end
+
+db_phone_paths = %w{/data/data/com.android.providers.contacts/databases/contacts2.db
+                    /data/data/com.android.providers.telephony/databases/mmssms.db}
+                    
+db_name_to_phone_path = 
+  db_phone_paths.inject({}) do |h, path|
+    h[File.basename(path)] = path
+    h
+  end
+
+#1) pull all dbs from phone to a local directory
+#TODO: check for adb...
+db_name_to_phone_path.each do |db_name, phone_path|
+  system!("adb pull #{phone_path} #{target_dir}/")
+end
+
+#2) recreate all dbs and scrub out custom collations
+#    SEE: http://code.google.com/p/android/issues/detail?id=10846
+db_names = db_name_to_phone_path.keys
+db_names.each do |db_name|
+  path = File.join(target_dir, db_name)
+  system!("sqlite3 #{path} .dump | sed 's/ COLLATE [A-Z]*//g' | sqlite3 #{path}.temp && rm #{path} && mv #{path}.temp #{path}")
+end

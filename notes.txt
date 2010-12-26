@@ -1,0 +1,5 @@
+- node adapter
+- build out test double, using node + sconover/jasmine + node-sqlite
+- ant - build plugin jar
+  where's phonegap.jar?
+
