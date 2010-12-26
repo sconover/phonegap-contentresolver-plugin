@@ -12,18 +12,19 @@ describe("content resolver test double - content://contacts/people", function() 
       selection: "display_name like 'Amy%'"
     }, function(people) {
       expect(people).toEqual([
-        { _id: '2', 
-          displayName: 'Amy Jones', 
-          lastTimeContacted: undefined, 
-          name: 'Amy Jones', 
-          number: undefined, 
-          numberKey: undefined, 
-          phoneticName: '', 
-          primaryPhone: undefined, 
-          sendToVoicemail: '0', 
-          starred: '0', 
-          timesContacted: '0', 
-          type: undefined }
+        
+         { _id: '2', 
+           displayName: 'Amy Jones', 
+           lastTimeContacted: undefined, 
+           name: 'Amy Jones', 
+           number: '415-555-1002', 
+           numberKey: '2001555514', 
+           phoneticName: '', 
+           primaryPhone: '3', 
+           sendToVoicemail: '0', 
+           starred: '0', 
+           timesContacted: '0', 
+           type: '2' }
       ])
     })
   });
