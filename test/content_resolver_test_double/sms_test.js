@@ -1,9 +1,16 @@
 require("./helper")
 
+var sys    = require('sys'),
+    path = require("path"),
+    sqlite = require('sqlite');
+
 describe("content resolver test double - content://sms/inbox, content://sms/outbox", function() {
   
   beforeEach(function(){
     cr = new android.ContentResolverTestDouble('test/sampledata/')
+
+    var db = sqlite.openDatabaseSync('test/sampledata/mmssms.db');
+    db.query("update sms set type=1 where body like '%weather%'")
   })
   
   it("brings back all the columns you'd expect from a sms inbox query", function(){
@@ -24,11 +31,22 @@ describe("content resolver test double - content://sms/inbox, content://sms/outb
           replyPathPresent: undefined, 
           status: '-1', 
           threadId: '1', 
-          type: '2' }
+          type: '1' }
       ])
     })
   });
-    
+  
+  it("only returns messages from the inbox", function(){
+    cr.query({
+      uri: "content://sms/inbox",
+      projection:{"body": "string"}
+    }, function(messages) {
+      var messageBodies = _.map(messages, function(message){return message.body}).join(" / ")
+      expect(messageBodies).toMatch("weather")
+      expect(messageBodies).toNotMatch("people")
+    })
+  });
+  
   it("brings back all the columns you'd expect from a sms outbox query", function(){
     cr.query({
       uri: "content://sms/sent",
@@ -65,6 +83,19 @@ describe("content resolver test double - content://sms/inbox, content://sms/outb
       ])
     })
   });
+
+  it("only returns messages from sent", function(){
+    cr.query({
+      uri: "content://sms/sent",
+      projection:{"body": "string"}
+    }, function(messages) {
+      var messageBodies = _.map(messages, function(message){return message.body}).join(" / ")
+      expect(messageBodies).toMatch("people")
+      expect(messageBodies).toNotMatch("weather")
+    })
+  });
+  
+
     
 });
 

@@ -39,10 +39,13 @@ _.extend(android.ContentResolverTestDouble.prototype, {
       availableColumns: [
         "_id", "address", "body", "date", "locked", "person", "protocol", "read", 
         "reply_path_present", "status", "thread_id", "type"
-      ]      
+      ],
+      whereConstraint: "type=1"      
     },
     
-    this._cachedCrUrlInfo["content://sms/sent"] = this._cachedCrUrlInfo["content://sms/inbox"]
+    this._cachedCrUrlInfo["content://sms/sent"] = 
+      _.extend(_.clone(this._cachedCrUrlInfo["content://sms/inbox"]),
+               {whereConstraint:"type=2"})
     
     return this._cachedCrUrlInfo
   },
@@ -54,7 +57,18 @@ _.extend(android.ContentResolverTestDouble.prototype, {
     var sqlStatment = "select "
     sqlStatment += (queryDef.projection ? _.keys(queryDef.projection) : urlInfo.availableColumns).join(",")
     sqlStatment += " from " + urlInfo.selectFrom
-    if (queryDef.selection) sqlStatment += " where " + queryDef.selection
+    
+    whereClause = ""
+    if (queryDef.selection) whereClause += queryDef.selection
+    if (urlInfo.whereConstraint) {
+      if (whereClause.length > 0) {
+        whereClause = urlInfo.whereConstraint + " AND (" + whereClause + ")"
+      } else {
+        whereClause = urlInfo.whereConstraint
+      }
+    }
+    
+    if (whereClause.length > 0) sqlStatment += " where " + whereClause
     if (queryDef.order) sqlStatment += " order by " + queryDef.order
     if (queryDef.limit) sqlStatment += " limit " + queryDef.limit
     
