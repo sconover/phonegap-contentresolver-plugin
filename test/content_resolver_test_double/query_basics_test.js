@@ -73,6 +73,22 @@ describe("query basics test (using content://contacts/people)", function() {
   });    
 
   
+  it("limits number of results", function(){
+    cr.query({
+      uri: "content://contacts/people",
+      projection: { "display_name": "string" },
+      order: "display_name ASC",
+      limit: 3
+    }, function(people) {
+      expect(people).toEqual([
+        {displayName: "Adam Miller"},
+        {displayName: "Amy Jones"},
+        {displayName: "Bob Barker"}
+      ])
+    })
+  });    
+
+  
   
 });
 

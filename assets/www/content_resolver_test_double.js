@@ -56,6 +56,7 @@ _.extend(android.ContentResolverTestDouble.prototype, {
     sqlStatment += " from " + urlInfo.selectFrom
     if (queryDef.selection) sqlStatment += " where " + queryDef.selection
     if (queryDef.order) sqlStatment += " order by " + queryDef.order
+    if (queryDef.limit) sqlStatment += " limit " + queryDef.limit
     
     this.executeSql(urlInfo.dbFile,
                     sqlStatment,
