@@ -20,7 +20,6 @@ public class ContentResolverQuery extends Plugin {
     try {
       JSONObject jsonArgs = args.getJSONObject(0);
       JSONArray results = query(jsonArgs);
-      debugLog("returning " + String.valueOf(results.length()) + " results");
       return new PluginResult(PluginResult.Status.OK, results);
     } catch (JSONException jex) {
       throw new RuntimeException(jex); //doing the needful with checked exception spam
@@ -40,7 +39,9 @@ public class ContentResolverQuery extends Plugin {
     if (args.has("limit")) { order += " limit " + args.getString("limit"); }
 
     logQuery(args, order);
-
+    
+    long startTimeMillis = System.currentTimeMillis();
+    
     Cursor cursor = this.ctx.getContentResolver().query(
                                                          Uri.parse(args.getString("uri")),
                                                          args.has("projection") ? convertJSONArrayToStringArray(args.getJSONObject("projection").names()) : null,
@@ -48,8 +49,19 @@ public class ContentResolverQuery extends Plugin {
                                                          args.has("selectionArgs") ? convertJSONArrayToStringArray(args.getJSONArray("selectionArgs")) : null,
                                                          order
     );
-
-    return convertCursorResultsToJson(cursor, args.has("projection") ? args.getJSONObject("projection") : null);
+    
+    long queryDoneMillis = System.currentTimeMillis();
+    
+    JSONArray results = convertCursorResultsToJson(cursor, args.has("projection") ? args.getJSONObject("projection") : null);
+    
+    long resultsDoneMillis = System.currentTimeMillis();
+    
+    debugLog("returning " + String.valueOf(results.length()) + " results." +
+             "  totalTime=" + String.valueOf(resultsDoneMillis - startTimeMillis) + 
+             "  queryTime=" + String.valueOf(queryDoneMillis - startTimeMillis) + 
+             "  resultBuildTime=" + String.valueOf(resultsDoneMillis - queryDoneMillis));
+    
+    return results;
   }
 
   private void logQuery(JSONObject args, String order) throws JSONException {
