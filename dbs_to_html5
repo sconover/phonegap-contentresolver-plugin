@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+src_dir = ARGV[0]
+target_dir = ARGV[1]
+
+unless src_dir && target_dir
+  $stderr.puts "usage: dbs_to_html5 src_dir target_dir"
+  exit(1)
+end
+
+# prepare a js file for use with html5 sql storage
+File.open("#{target_dir}/phone_dbs_for_browser.js", "w") do |f|
+  entries = []
+  
+  Dir["#{src_dir}/*.db"].each do |db_path|
+    db_dump = `sqlite3 #{db_path} .dump`
+    lines = db_dump.split("\n")
+    
+    create_table_statements = lines.select{|line|line =~ /^CREATE TABLE/}
+    drop_table_statements = create_table_statements.map{|s|"DROP TABLE IF EXISTS " + s.split(" ")[2]}
+    
+    create_view_statements = lines.select{|line|line =~ /^CREATE VIEW/}
+    drop_view_statements = create_view_statements.map{|s|"DROP VIEW IF EXISTS " + s.split(" ")[2]}
+    
+    lines = lines.reject{|s|s == "COMMIT;"}
+    lines << "select name from sqlite_master where type='table'"
+    lines = (drop_view_statements + drop_table_statements + lines).map{|line|'    "' + line.gsub('"', '\"').sub(/;$/, "") + '"'}
+
+    entries << "  #{File.basename(db_path, '.db')}: [\n" + lines.join(",\n") + "\n  ]"
+  end
+  
+  db_to_statements_js_str = "{\n" + entries.join(",\n\n") + "\n}"
+  
+  f << 
+%{(function(){
+  
+var dbToStatements = #{db_to_statements_js_str}
+
+var dbNames = []
+for (var dbName in dbToStatements) {
+  dbNames.push(dbName)
+}
+
+//need to make sure one db processes after another or strange things happen
+function processDb(i) {
+  var dbName = dbNames[i]
+  
+  if (dbName) {
+    console.log(dbName)
+    var db = openDatabase(dbName, "0.1", dbName, 250000)
+    db.transaction(function (tx) {
+      var statements = dbToStatements[dbName]
+      console.log(dbName, statements.length)
+      for(var i=0; i<statements.length; i++) {
+        var statement = statements[i]
+        tx.executeSql(statement, [], function(tx,result){console.log("worked")}, function(tx,error){console.log(error, statement)});
+      }
+    }, function(){processDb(i+1)}, function(){processDb(i+1)}, function(){processDb(i+1)})      
+  }
+}
+
+processDb(0)
+
+android.ContentResolverTestDouble.prototype.executeSql = function(dbFile, sqlStatement, resultsCallback) {
+  var dbName = dbFile.split(".")[0]
+
+  openDatabase(dbName, "0.1", dbName, 250000).transaction(function (tx) {
+    tx.executeSql(sqlStatement, [], function(tx,result){resultsCallback(result.rows)}, function(tx,error){console.log(error, statement)});
+  }, function(){}, function(){}, function(){})      
+  
+}
+
+}())}
+end

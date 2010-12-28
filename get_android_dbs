@@ -36,3 +36,4 @@ db_names.each do |db_name|
   path = File.join(target_dir, db_name)
   system!("sqlite3 #{path} .dump | sed 's/ COLLATE [A-Z]*//g' | sqlite3 #{path}.temp && rm #{path} && mv #{path}.temp #{path}")
 end
+

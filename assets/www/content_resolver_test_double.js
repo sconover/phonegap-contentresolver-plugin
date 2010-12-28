@@ -80,7 +80,16 @@ _.extend(android.ContentResolverTestDouble.prototype, {
   convertRowsFunction: function(projection, resultsCallbackFunction) {
     var self = this
     return function(rows) {
-      resultsCallbackFunction(_.map(rows, function(row) {
+      var rowArray = rows
+      
+      if (rows.item) {
+        rowArray = []
+        for(var i=0; i<rows.length; i++) {
+          rowArray.push(rows.item(i))
+        }        
+      }
+      
+      resultsCallbackFunction(_.map(rowArray, function(row) { 
         var pureJsRow = {}
         for (k in row) {
           var value = row[k]
